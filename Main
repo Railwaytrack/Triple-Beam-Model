@@ -1,1 +1,566 @@
+% Determination of dynamic amplification factor for a triple-beam model
+% Representing structure of ballast-less railway track by a triple-beam model
+% Triple-beam modelsubjected to a constant-velocity concentrated moving load
 
+% w1(x1)=P1*exp(m1*x1)+P2*exp(m2*x1)+P3*exp(m3*x1)+...+P12*exp(m12*x1)
+% w2(x1)=Q1*exp(m1*x1)+Q2*exp(m2*x1)+Q3*exp(m3*x1)+...+Q12*exp(m12*x1)
+% w3(x1)=R1*exp(m1*x1)+R2*exp(m2*x1)+R3*exp(m3*x1)+...+R12*exp(m12*x1)
+
+clc
+clear all
+close all
+
+for i=1:10
+% Mechanical features considered for key components of the ballast-less railway track [using triple-beam model]
+E1=210000000000; % N/m^2
+E2=28000000000; % N/m^2
+E3=26000000000; % N/m^2
+I1=0.000060766; % m^4
+I2=0.0017; % m^4
+I3=0.0018; % m^4
+m1=120; % kg/m
+m2=1300; % kg/m
+m3=1350; % kg/m
+k1=1e6; % N/m^2
+c1=10e3; % N.s/m^2
+k2=3e5; % N/m^2
+c2=10e3; % N.s/m^2
+k3=3e5; % N/m^2
+c3=10e3; % N.s/m^2
+
+% Capturing  60/3.6 m/s < V < 900/3.6 m/s ; Interval: 100/3.6 m/s
+v=[60 100 200 300 400 500 600 700 800 900]/3.6; % m/s [Constant velocity of moving load]
+
+% Determination of deflection of upper beam for generated range of V
+
+% Coefficients of 12th degree polynomial equation
+aa1=E2*I2*E3*I3;
+aa2=E2*I2*m3*v(i)^2+E3*I3*m2*v(i)^2;
+aa3=-E2*I2*(c2+c3)*v(i)-E3*I3*c1*v(i)-E3*I3*c2*v(i);
+aa4=E2*I2*(k2+k3)+m2*m3*v(i)^4+E3*I3*(k1+k2);
+aa5=-m2*(c2+c3)*v(i)^3-m3*c1*v(i)^3-m3*c2*v(i)^3;
+aa6=m2*v(i)^2*(k2+k3)+c1*(c2+c3)*v(i)^2+c2*(c2+c3)*v(i)^2+(k1+k2)*m3*v(i)^2-c2^2*v(i)^2;
+aa7=-c1*v(i)*(k2+k3)-c2*v(i)*(k2+k3)-(k1+k2)*(c2+c3)*v(i)+2*k2*c2*v(i);
+aa8=(k1+k2)*(k2+k3)-k2^2;
+
+bb1=c1^2*v(i)^2*E3*I3;
+bb2=-2*c1*k1*E3*I3*v(i);
+bb3=c1^2*m3*v(i)^4+k1^2*E3*I3;
+bb4=-c1^2*c2*v(i)^3-c1^2*c3*v(i)^3-2*c1*k1*m3*v(i)^3;
+bb5=c1^2*v(i)^2*(k2+k3)+k1^2*m3*v(i)^2+2*c1*c2*k1*v(i)^2+2*c1*c3*k1*v(i)^2;
+bb6=-c2*k1^2*v(i)-c3*k1^2*v(i)-2*c1*k1*v(i)*(k2+k3);
+bb7=k1^2*(k2+k3);
+
+abc1=E1*I1*aa1; % coefficient of m^12
+abc2=E1*I1*aa2+m1*v(i)^2*aa1; % coefficient of m^10
+abc3=E1*I1*aa3-c1*v(i)*aa1; % coefficient of m^9
+abc4=E1*I1*aa4+m1*v(i)^2*aa2+k1*aa1; % coefficient of m^8
+abc5=E1*I1*aa5+m1*v(i)^2*aa3-c1*v(i)*aa2; % coefficient of m^7
+abc6=E1*I1*aa6+m1*v(i)^2*aa4-c1*v(i)*aa3-bb1+k1*aa2; % coefficient of m^6
+abc7=E1*I1*aa7+m1*v(i)^2*aa5-c1*v(i)*aa4-bb2+k1*aa3; % coefficient of m^5
+abc8=E1*I1*aa8+m1*v(i)^2*aa6-c1*v(i)*aa5-bb3+k1*aa4; % coefficient of m^4
+abc9=m1*v(i)^2*aa7-c1*v(i)*aa6-bb4+k1*aa5; % coefficient of m^3
+abc10=m1*v(i)^2*aa8-c1*v(i)*aa7-bb5+k1*aa6; % coefficient of m^2
+abc11=-c1*v(i)*aa8-bb6+k1*aa7; % coefficient of m^1
+abc12=k1*aa8-bb7; % coefficient of m^0
+
+% Finding roots of 12th degree polynomial equation
+aa=roots([abc1 0 abc2 abc3 abc4 abc5 abc6 abc7 abc8 abc9 abc10 abc11 abc12]);
+f=0;k=0;P=0;Q=0;a=0;b=0;
+
+% Rearrange roots in descending order
+for jjj=1:12
+    for kkk=1:11
+        if real(aa(kkk)) < real(aa(kkk+1))
+            T=aa(kkk);
+            aa(kkk)=aa(kkk+1);
+            aa(kkk+1)=T;
+        end
+    end
+end
+for kkk=1:2:12
+    if imag(aa(kkk)) < 0
+            T=aa(kkk);
+            aa(kkk)=aa(kkk+1);
+            aa(kkk+1)=T;
+    end
+end
+
+% Coefficients of general solutions derived for upper, middle and lower beams
+a(1)=real(aa(1,1));
+a(2)=real(aa(3,1));
+a(3)=real(aa(5,1));
+a(4)=-a(1); a(5)=-a(2); a(6)=-a(3);
+
+b(1)=abs(imag(aa(1,1)));
+b(2)=abs(imag(aa(3,1)));
+b(3)=abs(imag(aa(5,1)));
+b(4)=abs(imag(aa(11,1)));
+b(5)=abs(imag(aa(9,1)));
+b(6)=abs(imag(aa(7,1)));
+
+% Characterized continuity conditions
+k(1,1)=0;k(1,2)=-1;k(1,3)=0;k(1,4)=-1;k(1,5)=0;k(1,6)=-1;k(1,7)=0;k(1,8)=1;k(1,9)=0;k(1,10)=1;k(1,11)=0;k(1,12)=1;
+k(2,1)=-b(1);k(2,2)=-a(1);k(2,3)=-b(2);k(2,4)=-a(2);k(2,5)=-b(3);k(2,6)=-a(3);k(2,7)=b(4);k(2,8)=a(4);k(2,9)=b(5);k(2,10)=a(5);k(2,11)=b(6);k(2,12)=a(6);
+k(3,1)=-2*a(1)*b(1);k(3,2)=-a(1)^2+b(1)^2;k(3,3)=-2*a(2)*b(2);k(3,4)=-a(2)^2+b(2)^2;
+k(3,5)=-2*a(3)*b(3);k(3,6)=-a(3)^2+b(3)^2;k(3,7)=2*a(4)*b(4);k(3,8)=a(4)^2-b(4)^2;
+k(3,9)=2*a(5)*b(5);k(3,10)=a(5)^2-b(5)^2;k(3,11)=2*a(6)*b(6);k(3,12)=a(6)^2-b(6)^2;
+k(4,1)=-3*a(1)^2*b(1)+b(1)^3;k(4,2)=-a(1)^3+3*a(1)*b(1)^2;
+k(4,3)=-3*a(2)^2*b(2)+b(2)^3;k(4,4)=-a(2)^3+3*a(2)*b(2)^2;
+k(4,5)=-3*a(3)^2*b(3)+b(3)^3;k(4,6)=-a(3)^3+3*a(3)*b(3)^2;
+k(4,7)=3*a(4)^2*b(4)-b(4)^3;k(4,8)=a(4)^3-3*a(4)*b(4)^2;
+k(4,9)=3*a(5)^2*b(5)-b(5)^3;k(4,10)=a(5)^3-3*a(5)*b(5)^2;
+k(4,11)=3*a(6)^2*b(6)-b(6)^3;k(4,12)=a(6)^3-3*a(6)*b(6)^2;
+
+% Qi = ti * Pi
+t1=(E1.*I1.*aa(1).^4+m1.*v(i)^2.*aa(1).^2-c1.*v(i).*aa(1)+k1)./(k1-c1.*v(i).*aa(1));
+t2=(E1.*I1.*aa(11).^4+m1.*v(i)^2.*aa(11).^2-c1.*v(i).*aa(11)+k1)./(k1-c1.*v(i).*aa(11));
+t3=(E1.*I1.*aa(9).^4+m1.*v(i)^2.*aa(9).^2-c1.*v(i).*aa(9)+k1)./(k1-c1.*v(i).*aa(9));
+t4=(E1.*I1.*aa(3).^4+m1.*v(i)^2.*aa(3).^2-c1.*v(i).*aa(3)+k1)./(k1-c1.*v(i).*aa(3));
+t5=(E1.*I1.*aa(5).^4+m1.*v(i)^2.*aa(5).^2-c1.*v(i).*aa(5)+k1)./(k1-c1.*v(i).*aa(5));
+t6=(E1.*I1.*aa(7).^4+m1.*v(i)^2.*aa(7).^2-c1.*v(i).*aa(7)+k1)./(k1-c1.*v(i).*aa(7));
+
+k(5,1)=t1.*k(1,1);k(5,2)=t2.*k(1,2);k(5,3)=t3.*k(1,3);k(5,4)=t4.*k(1,4);k(5,5)=t5.*k(1,5);k(5,6)=t6.*k(1,6);
+k(5,7)=t1.*k(1,7);k(5,8)=t2.*k(1,8);k(5,9)=t3.*k(1,9);k(5,10)=t4.*k(1,10);k(5,11)=t5.*k(1,11);k(5,12)=t6.*k(1,12);
+
+k(6,1)=t1.*k(2,1);k(6,2)=t2.*k(2,2);k(6,3)=t3.*k(2,3);k(6,4)=t4.*k(2,4);k(6,5)=t5.*k(2,5);k(6,6)=t6.*k(2,6);
+k(6,7)=t1.*k(2,7);k(6,8)=t2.*k(2,8);k(6,9)=t3.*k(2,9);k(6,10)=t4.*k(2,10);k(6,11)=t5.*k(2,11);k(6,12)=t6.*k(2,12);
+
+k(7,1)=t1.*k(3,1);k(7,2)=t2.*k(3,2);k(7,3)=t3.*k(3,3);k(7,4)=t4.*k(3,4);k(7,5)=t5.*k(3,5);k(7,6)=t6.*k(3,6);
+k(7,7)=t1.*k(3,7);k(7,8)=t2.*k(3,8);k(7,9)=t3.*k(3,9);k(7,10)=t4.*k(3,10);k(7,11)=t5.*k(3,11);k(7,12)=t6.*k(3,12);
+
+k(8,1)=t1.*k(4,1);k(8,2)=t2.*k(4,2);k(8,3)=t3.*k(4,3);k(8,4)=t4.*k(4,4);k(8,5)=t5.*k(4,5);k(8,6)=t6.*k(4,6);
+k(8,7)=t1.*k(4,7);k(8,8)=t2.*k(4,8);k(8,9)=t3.*k(4,9);k(8,10)=t4.*k(4,10);k(8,11)=t5.*k(4,11);k(8,12)=t6.*k(4,12);
+
+% Ri = ti * tti * Pi
+tt1=t1.*(k2-c2.*v(i).*aa(1))./(E3.*I3.*aa(1).^4+m3.*v(i)^2.*aa(1).^2-c2.*v(i).*aa(1)-c3.*v(i).*aa(1)+k2+k3);
+tt2=t2.*(k2-c2.*v(i).*aa(11))./(E3.*I3.*aa(11).^4+m3.*v(i)^2.*aa(11).^2-c2.*v(i).*aa(11)-c3.*v(i).*aa(11)+k2+k3);
+tt3=t3.*(k2-c2.*v(i).*aa(9))./(E3.*I3.*aa(9).^4+m3.*v(i)^2.*aa(9).^2-c2.*v(i).*aa(9)-c3.*v(i).*aa(9)+k2+k3);
+tt4=t4.*(k2-c2.*v(i).*aa(3))./(E3.*I3.*aa(3).^4+m3.*v(i)^2.*aa(3).^2-c2.*v(i).*aa(3)-c3.*v(i).*aa(3)+k2+k3);
+tt5=t5.*(k2-c2.*v(i).*aa(5))./(E3.*I3.*aa(5).^4+m3.*v(i)^2.*aa(5).^2-c2.*v(i).*aa(5)-c3.*v(i).*aa(5)+k2+k3);
+tt6=t6.*(k2-c2.*v(i).*aa(7))./(E3.*I3.*aa(7).^4+m3.*v(i)^2.*aa(7).^2-c2.*v(i).*aa(7)-c3.*v(i).*aa(7)+k2+k3);
+
+k(9,1)=tt1.*k(1,1);k(9,2)=tt2.*k(1,2);k(9,3)=tt3.*k(1,3);k(9,4)=tt4.*k(1,4);k(9,5)=tt5.*k(1,5);k(9,6)=tt6.*k(1,6);
+k(9,7)=tt1.*k(1,7);k(9,8)=tt2.*k(1,8);k(9,9)=tt3.*k(1,9);k(9,10)=tt4.*k(1,10);k(9,11)=tt5.*k(1,11);k(9,12)=tt6.*k(1,12);
+
+k(10,1)=tt1.*k(2,1);k(10,2)=tt2.*k(2,2);k(10,3)=tt3.*k(2,3);k(10,4)=tt4.*k(2,4);k(10,5)=tt5.*k(2,5);k(10,6)=tt6.*k(2,6);
+k(10,7)=tt1.*k(2,7);k(10,8)=tt2.*k(2,8);k(10,9)=tt3.*k(2,9);k(10,10)=tt4.*k(2,10);k(10,11)=tt5.*k(2,11);k(10,12)=tt6.*k(2,12);
+
+k(11,1)=tt1.*k(3,1);k(11,2)=tt2.*k(3,2);k(11,3)=tt3.*k(3,3);k(11,4)=tt4.*k(3,4);k(11,5)=tt5.*k(3,5);k(11,6)=tt6.*k(3,6);
+k(11,7)=tt1.*k(3,7);k(11,8)=tt2.*k(3,8);k(11,9)=tt3.*k(3,9);k(11,10)=tt4.*k(3,10);k(11,11)=tt5.*k(3,11);k(11,12)=tt6.*k(3,12);
+
+k(12,1)=tt1.*k(4,1);k(12,2)=tt2.*k(4,2);k(12,3)=tt3.*k(4,3);k(12,4)=tt4.*k(4,4);k(12,5)=tt5.*k(4,5);k(12,6)=tt6.*k(4,6);
+k(12,7)=tt1.*k(4,7);k(12,8)=tt2.*k(4,8);k(12,9)=tt3.*k(4,9);k(12,10)=tt4.*k(4,10);k(12,11)=tt5.*k(4,11);k(12,12)=tt6.*k(4,12);
+
+f=[0.0000 0.0000 0.0000 -1000/E1/I1 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000];
+P=k^-1*f';
+
+% Determinatino of beam deflectin at 15 m distance from the position of the applied concentrated moving load
+% Capturing both right and left sides
+x=-15:0.5:15;
+for j=1:61
+  % w1(x1) for x1>=0
+  if x(j)>=0
+       xx=x(j);
+       y1(j)= exp(a(4)*xx)*(P(7)*sin(b(4)*xx)+P(8)*cos(b(4)*xx))...
+           +exp(a(5)*xx)*(P(9)*sin(b(5)*xx)+P(10)*cos(b(5)*xx))...
+           +exp(a(6)*xx)*(P(11)*sin(b(6)*xx)+P(12)*cos(b(6)*xx));
+  % w1(x1) for x1<0
+  else
+       xx=x(j);
+       y1(j)= exp(a(1)*xx)*(P(1)*sin(b(1)*xx)+P(2)*cos(b(1)*xx))...
+           +exp(a(2)*xx)*(P(3)*sin(b(2)*xx)+P(4)*cos(b(2)*xx))...
+           +exp(a(3)*xx)*(P(5)*sin(b(3)*xx)+P(6)*cos(b(3)*xx));
+  end
+end  
+y1=real(y1');
+y1min(i,1)=v(i);
+y1min(i,2)=1000*min(y1);
+end
+
+% Derivation of minimum (-) deflection of upper beam and relavant V for 60/3.6 m/s < V < 900/3.6 m/s ; Interval: 100/3.6 m/s
+yminabs=abs(y1min(1,2));
+vmax=v(1);
+for i=2:9
+    if abs(y1min(i,2))>yminabs
+        yminabs=abs(y1min(i,2));
+        vmax=v(i);
+        if abs(y1min(i+1,2))<abs(y1min(i,2))
+            break
+        end
+    end
+end
+
+% Capturing  Vmax-100/3.6 m/s < V < Vmax+100/3.6 m/s ; Interval: 10/3.6 m/s
+v(1)=vmax-(100/3.6);
+for i=2:20
+      v(i)=v(i-1)+(10/3.6);
+end
+
+% Determination of deflection of upper beam for generated range of V
+for i=1:20
+% Coefficients of 12th degree polynomial equation
+aa1=E2*I2*E3*I3;
+aa2=E2*I2*m3*v(i)^2+E3*I3*m2*v(i)^2;
+aa3=-E2*I2*(c2+c3)*v(i)-E3*I3*c1*v(i)-E3*I3*c2*v(i);
+aa4=E2*I2*(k2+k3)+m2*m3*v(i)^4+E3*I3*(k1+k2);
+aa5=-m2*(c2+c3)*v(i)^3-m3*c1*v(i)^3-m3*c2*v(i)^3;
+aa6=m2*v(i)^2*(k2+k3)+c1*(c2+c3)*v(i)^2+c2*(c2+c3)*v(i)^2+(k1+k2)*m3*v(i)^2-c2^2*v(i)^2;
+aa7=-c1*v(i)*(k2+k3)-c2*v(i)*(k2+k3)-(k1+k2)*(c2+c3)*v(i)+2*k2*c2*v(i);
+aa8=(k1+k2)*(k2+k3)-k2^2;
+
+bb1=c1^2*v(i)^2*E3*I3;
+bb2=-2*c1*k1*E3*I3*v(i);
+bb3=c1^2*m3*v(i)^4+k1^2*E3*I3;
+bb4=-c1^2*c2*v(i)^3-c1^2*c3*v(i)^3-2*c1*k1*m3*v(i)^3;
+bb5=c1^2*v(i)^2*(k2+k3)+k1^2*m3*v(i)^2+2*c1*c2*k1*v(i)^2+2*c1*c3*k1*v(i)^2;
+bb6=-c2*k1^2*v(i)-c3*k1^2*v(i)-2*c1*k1*v(i)*(k2+k3);
+bb7=k1^2*(k2+k3);
+
+abc1=E1*I1*aa1; % coefficient of m^12
+abc2=E1*I1*aa2+m1*v(i)^2*aa1; % coefficient of m^10
+abc3=E1*I1*aa3-c1*v(i)*aa1; % coefficient of m^9
+abc4=E1*I1*aa4+m1*v(i)^2*aa2+k1*aa1; % coefficient of m^8
+abc5=E1*I1*aa5+m1*v(i)^2*aa3-c1*v(i)*aa2; % coefficient of m^7
+abc6=E1*I1*aa6+m1*v(i)^2*aa4-c1*v(i)*aa3-bb1+k1*aa2; % coefficient of m^6
+abc7=E1*I1*aa7+m1*v(i)^2*aa5-c1*v(i)*aa4-bb2+k1*aa3; % coefficient of m^5
+abc8=E1*I1*aa8+m1*v(i)^2*aa6-c1*v(i)*aa5-bb3+k1*aa4; % coefficient of m^4
+abc9=m1*v(i)^2*aa7-c1*v(i)*aa6-bb4+k1*aa5; % coefficient of m^3
+abc10=m1*v(i)^2*aa8-c1*v(i)*aa7-bb5+k1*aa6; % coefficient of m^2
+abc11=-c1*v(i)*aa8-bb6+k1*aa7; % coefficient of m^1
+abc12=k1*aa8-bb7; % coefficient of m^0
+
+% Finding roots of 12th degree polynomial equation
+aa=roots([abc1 0 abc2 abc3 abc4 abc5 abc6 abc7 abc8 abc9 abc10 abc11 abc12]);
+f=0;k=0;P=0;Q=0;a=0;b=0;
+
+% Rearrange roots in descending order
+for jjj=1:12
+    for kkk=1:11
+        if real(aa(kkk)) < real(aa(kkk+1))
+            T=aa(kkk);
+            aa(kkk)=aa(kkk+1);
+            aa(kkk+1)=T;
+        end
+    end
+end
+for kkk=1:2:12
+    if imag(aa(kkk)) < 0
+            T=aa(kkk);
+            aa(kkk)=aa(kkk+1);
+            aa(kkk+1)=T;
+    end
+end
+
+% Coefficients of general solutions derived for upper, middle and lower beams
+a(1)=real(aa(1,1));
+a(2)=real(aa(3,1));
+a(3)=real(aa(5,1));
+a(4)=-a(1); a(5)=-a(2); a(6)=-a(3);
+
+b(1)=abs(imag(aa(1,1)));
+b(2)=abs(imag(aa(3,1)));
+b(3)=abs(imag(aa(5,1)));
+b(4)=abs(imag(aa(11,1)));
+b(5)=abs(imag(aa(9,1)));
+b(6)=abs(imag(aa(7,1)));
+
+% Characterized continuity conditions
+k(1,1)=0;k(1,2)=-1;k(1,3)=0;k(1,4)=-1;k(1,5)=0;k(1,6)=-1;k(1,7)=0;k(1,8)=1;k(1,9)=0;k(1,10)=1;k(1,11)=0;k(1,12)=1;
+k(2,1)=-b(1);k(2,2)=-a(1);k(2,3)=-b(2);k(2,4)=-a(2);k(2,5)=-b(3);k(2,6)=-a(3);k(2,7)=b(4);k(2,8)=a(4);k(2,9)=b(5);k(2,10)=a(5);k(2,11)=b(6);k(2,12)=a(6);
+k(3,1)=-2*a(1)*b(1);k(3,2)=-a(1)^2+b(1)^2;k(3,3)=-2*a(2)*b(2);k(3,4)=-a(2)^2+b(2)^2;
+k(3,5)=-2*a(3)*b(3);k(3,6)=-a(3)^2+b(3)^2;k(3,7)=2*a(4)*b(4);k(3,8)=a(4)^2-b(4)^2;
+k(3,9)=2*a(5)*b(5);k(3,10)=a(5)^2-b(5)^2;k(3,11)=2*a(6)*b(6);k(3,12)=a(6)^2-b(6)^2;
+k(4,1)=-3*a(1)^2*b(1)+b(1)^3;k(4,2)=-a(1)^3+3*a(1)*b(1)^2;
+k(4,3)=-3*a(2)^2*b(2)+b(2)^3;k(4,4)=-a(2)^3+3*a(2)*b(2)^2;
+k(4,5)=-3*a(3)^2*b(3)+b(3)^3;k(4,6)=-a(3)^3+3*a(3)*b(3)^2;
+k(4,7)=3*a(4)^2*b(4)-b(4)^3;k(4,8)=a(4)^3-3*a(4)*b(4)^2;
+k(4,9)=3*a(5)^2*b(5)-b(5)^3;k(4,10)=a(5)^3-3*a(5)*b(5)^2;
+k(4,11)=3*a(6)^2*b(6)-b(6)^3;k(4,12)=a(6)^3-3*a(6)*b(6)^2;
+
+% Qi = ti * Pi
+t1=(E1.*I1.*aa(1).^4+m1.*v(i)^2.*aa(1).^2-c1.*v(i).*aa(1)+k1)./(k1-c1.*v(i).*aa(1));
+t2=(E1.*I1.*aa(11).^4+m1.*v(i)^2.*aa(11).^2-c1.*v(i).*aa(11)+k1)./(k1-c1.*v(i).*aa(11));
+t3=(E1.*I1.*aa(9).^4+m1.*v(i)^2.*aa(9).^2-c1.*v(i).*aa(9)+k1)./(k1-c1.*v(i).*aa(9));
+t4=(E1.*I1.*aa(3).^4+m1.*v(i)^2.*aa(3).^2-c1.*v(i).*aa(3)+k1)./(k1-c1.*v(i).*aa(3));
+t5=(E1.*I1.*aa(5).^4+m1.*v(i)^2.*aa(5).^2-c1.*v(i).*aa(5)+k1)./(k1-c1.*v(i).*aa(5));
+t6=(E1.*I1.*aa(7).^4+m1.*v(i)^2.*aa(7).^2-c1.*v(i).*aa(7)+k1)./(k1-c1.*v(i).*aa(7));
+
+k(5,1)=t1.*k(1,1);k(5,2)=t2.*k(1,2);k(5,3)=t3.*k(1,3);k(5,4)=t4.*k(1,4);k(5,5)=t5.*k(1,5);k(5,6)=t6.*k(1,6);
+k(5,7)=t1.*k(1,7);k(5,8)=t2.*k(1,8);k(5,9)=t3.*k(1,9);k(5,10)=t4.*k(1,10);k(5,11)=t5.*k(1,11);k(5,12)=t6.*k(1,12);
+
+k(6,1)=t1.*k(2,1);k(6,2)=t2.*k(2,2);k(6,3)=t3.*k(2,3);k(6,4)=t4.*k(2,4);k(6,5)=t5.*k(2,5);k(6,6)=t6.*k(2,6);
+k(6,7)=t1.*k(2,7);k(6,8)=t2.*k(2,8);k(6,9)=t3.*k(2,9);k(6,10)=t4.*k(2,10);k(6,11)=t5.*k(2,11);k(6,12)=t6.*k(2,12);
+
+k(7,1)=t1.*k(3,1);k(7,2)=t2.*k(3,2);k(7,3)=t3.*k(3,3);k(7,4)=t4.*k(3,4);k(7,5)=t5.*k(3,5);k(7,6)=t6.*k(3,6);
+k(7,7)=t1.*k(3,7);k(7,8)=t2.*k(3,8);k(7,9)=t3.*k(3,9);k(7,10)=t4.*k(3,10);k(7,11)=t5.*k(3,11);k(7,12)=t6.*k(3,12);
+
+k(8,1)=t1.*k(4,1);k(8,2)=t2.*k(4,2);k(8,3)=t3.*k(4,3);k(8,4)=t4.*k(4,4);k(8,5)=t5.*k(4,5);k(8,6)=t6.*k(4,6);
+k(8,7)=t1.*k(4,7);k(8,8)=t2.*k(4,8);k(8,9)=t3.*k(4,9);k(8,10)=t4.*k(4,10);k(8,11)=t5.*k(4,11);k(8,12)=t6.*k(4,12);
+
+% Ri = ti * tti * Pi
+tt1=t1.*(k2-c2.*v(i).*aa(1))./(E3.*I3.*aa(1).^4+m3.*v(i)^2.*aa(1).^2-c2.*v(i).*aa(1)-c3.*v(i).*aa(1)+k2+k3);
+tt2=t2.*(k2-c2.*v(i).*aa(11))./(E3.*I3.*aa(11).^4+m3.*v(i)^2.*aa(11).^2-c2.*v(i).*aa(11)-c3.*v(i).*aa(11)+k2+k3);
+tt3=t3.*(k2-c2.*v(i).*aa(9))./(E3.*I3.*aa(9).^4+m3.*v(i)^2.*aa(9).^2-c2.*v(i).*aa(9)-c3.*v(i).*aa(9)+k2+k3);
+tt4=t4.*(k2-c2.*v(i).*aa(3))./(E3.*I3.*aa(3).^4+m3.*v(i)^2.*aa(3).^2-c2.*v(i).*aa(3)-c3.*v(i).*aa(3)+k2+k3);
+tt5=t5.*(k2-c2.*v(i).*aa(5))./(E3.*I3.*aa(5).^4+m3.*v(i)^2.*aa(5).^2-c2.*v(i).*aa(5)-c3.*v(i).*aa(5)+k2+k3);
+tt6=t6.*(k2-c2.*v(i).*aa(7))./(E3.*I3.*aa(7).^4+m3.*v(i)^2.*aa(7).^2-c2.*v(i).*aa(7)-c3.*v(i).*aa(7)+k2+k3);
+
+k(9,1)=tt1.*k(1,1);k(9,2)=tt2.*k(1,2);k(9,3)=tt3.*k(1,3);k(9,4)=tt4.*k(1,4);k(9,5)=tt5.*k(1,5);k(9,6)=tt6.*k(1,6);
+k(9,7)=tt1.*k(1,7);k(9,8)=tt2.*k(1,8);k(9,9)=tt3.*k(1,9);k(9,10)=tt4.*k(1,10);k(9,11)=tt5.*k(1,11);k(9,12)=tt6.*k(1,12);
+
+k(10,1)=tt1.*k(2,1);k(10,2)=tt2.*k(2,2);k(10,3)=tt3.*k(2,3);k(10,4)=tt4.*k(2,4);k(10,5)=tt5.*k(2,5);k(10,6)=tt6.*k(2,6);
+k(10,7)=tt1.*k(2,7);k(10,8)=tt2.*k(2,8);k(10,9)=tt3.*k(2,9);k(10,10)=tt4.*k(2,10);k(10,11)=tt5.*k(2,11);k(10,12)=tt6.*k(2,12);
+
+k(11,1)=tt1.*k(3,1);k(11,2)=tt2.*k(3,2);k(11,3)=tt3.*k(3,3);k(11,4)=tt4.*k(3,4);k(11,5)=tt5.*k(3,5);k(11,6)=tt6.*k(3,6);
+k(11,7)=tt1.*k(3,7);k(11,8)=tt2.*k(3,8);k(11,9)=tt3.*k(3,9);k(11,10)=tt4.*k(3,10);k(11,11)=tt5.*k(3,11);k(11,12)=tt6.*k(3,12);
+
+k(12,1)=tt1.*k(4,1);k(12,2)=tt2.*k(4,2);k(12,3)=tt3.*k(4,3);k(12,4)=tt4.*k(4,4);k(12,5)=tt5.*k(4,5);k(12,6)=tt6.*k(4,6);
+k(12,7)=tt1.*k(4,7);k(12,8)=tt2.*k(4,8);k(12,9)=tt3.*k(4,9);k(12,10)=tt4.*k(4,10);k(12,11)=tt5.*k(4,11);k(12,12)=tt6.*k(4,12);
+
+f=[0.0000 0.0000 0.0000 -1/E1/I1 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000];
+P=k^-1*f';
+
+% Determinatino of beam deflectin at 15 m distance from the position of the applied concentrated moving load
+% Capturing both right and left sides
+x=-15:0.5:15;
+for j=1:61
+  % w1(x1) for x1>=0
+  if x(j)>=0
+       xx=x(j);
+       y1(j)= exp(a(4)*xx)*(P(7)*sin(b(4)*xx)+P(8)*cos(b(4)*xx))...
+           +exp(a(5)*xx)*(P(9)*sin(b(5)*xx)+P(10)*cos(b(5)*xx))...
+           +exp(a(6)*xx)*(P(11)*sin(b(6)*xx)+P(12)*cos(b(6)*xx));
+  % w1(x1) for x1<0
+  else
+       xx=x(j);
+       y1(j)= exp(a(1)*xx)*(P(1)*sin(b(1)*xx)+P(2)*cos(b(1)*xx))...
+           +exp(a(2)*xx)*(P(3)*sin(b(2)*xx)+P(4)*cos(b(2)*xx))...
+           +exp(a(3)*xx)*(P(5)*sin(b(3)*xx)+P(6)*cos(b(3)*xx));
+  end
+end  
+y1=real(y1');
+y1min(i,1)=v(i);
+y1min(i,2)=1000*min(y1);
+end
+
+% Derivation of minimum (-) deflection of upper beam and relavant V for Vmax-100/3.6 m/s < V < Vmax+100/3.6 m/s ; Interval: 10/3.6 m/s
+y1minabs=abs(y1min(1,2));
+vmax=v(1);
+for i=2:20
+    if abs(y1min(i,2))>y1minabs
+        y1minabs=abs(y1min(i,2));
+        vmax=v(i);
+    end
+end
+
+% Capturing  Vmax-10/3.6 m/s < V < Vmax+10/3.6 m/s ; Interval: 1/3.6 m/s
+v(1)=vmax-(10/3.6);
+for i=2:20
+      v(i)=v(i-1)+(1/3.6);
+end
+
+% Static loading condition: 1 m/s
+v(151)=[1];
+for i=1:151
+% Coefficients of 12th degree polynomial equation
+aa1=E2*I2*E3*I3;
+aa2=E2*I2*m3*v(i)^2+E3*I3*m2*v(i)^2;
+aa3=-E2*I2*(c2+c3)*v(i)-E3.*I3*c1*v(i)-E3*I3*c2*v(i);
+aa4=E2*I2*(k2+k3)+m2*m3*v(i)^4+E3*I3*(k1+k2);
+aa5=-m2*(c2+c3)*v(i)^3-m3*c1*v(i)^3-m3*c2*v(i)^3;
+aa6=m2*v(i)^2*(k2+k3)+c1*(c2+c3)*v(i)^2+c2*(c2+c3)*v(i)^2+(k1+k2)*m3*v(i)^2-c2^2*v(i)^2;
+aa7=-c1*v(i)*(k2+k3)-c2*v(i)*(k2+k3)-(k1+k2)*(c2+c3)*v(i)+2*k2*c2*v(i);
+aa8=(k1+k2)*(k2+k3)-k2^2;
+
+bb1=c1^2*v(i)^2*E3*I3;
+bb2=-2*c1*k1*E3*I3*v(i);
+bb3=c1^2*m3*v(i)^4+k1^2*E3*I3;
+bb4=-c1^2*c2*v(i)^3-c1^2*c3*v(i)^3-2*c1*k1*m3*v(i)^3;
+bb5=c1^2*v(i)^2*(k2+k3)+k1^2*m3*v(i)^2+2*c1*c2*k1*v(i)^2+2*c1*c3*k1*v(i)^2;
+bb6=-c2*k1^2*v(i)-c3*k1^2*v(i)-2*c1*k1*v(i)*(k2+k3);
+bb7=k1^2*(k2+k3);
+
+abc1=E1*I1*aa1; % coefficient of m^12
+abc2=E1*I1*aa2+m1*v(i)^2*aa1; % coefficient of m^10
+abc3=E1*I1*aa3-c1*v(i)*aa1; % coefficient of m^9
+abc4=E1*I1*aa4+m1*v(i)^2*aa2+k1*aa1; % coefficient of m^8
+abc5=E1*I1*aa5+m1*v(i)^2*aa3-c1*v(i)*aa2; % coefficient of m^7
+abc6=E1*I1*aa6+m1*v(i)^2*aa4-c1*v(i)*aa3-bb1+k1*aa2; % coefficient of m^6
+abc7=E1*I1*aa7+m1*v(i)^2*aa5-c1*v(i)*aa4-bb2+k1*aa3; % coefficient of m^5
+abc8=E1*I1*aa8+m1*v(i)^2*aa6-c1*v(i)*aa5-bb3+k1*aa4; % coefficient of m^4
+abc9=m1*v(i)^2*aa7-c1*v(i)*aa6-bb4+k1*aa5; % coefficient of m^3
+abc10=m1*v(i)^2*aa8-c1*v(i)*aa7-bb5+k1*aa6; % coefficient of m^2
+abc11=-c1*v(i)*aa8-bb6+k1*aa7; % coefficient of m^1
+abc12=k1*aa8-bb7; % coefficient of m^0
+
+% Finding roots of 12th degree polynomial equation
+aa=roots([abc1 0 abc2 abc3 abc4 abc5 abc6 abc7 abc8 abc9 abc10 abc11 abc12]);
+f=0;k=0;P=0;Q=0;a=0;b=0;
+
+% Rearrange roots in descending order
+for jjj=1:12
+    for kkk=1:11
+        if real(aa(kkk)) < real(aa(kkk+1))
+            T=aa(kkk);
+            aa(kkk)=aa(kkk+1);
+            aa(kkk+1)=T;
+        end
+    end
+end
+for kkk=1:2:12
+    if imag(aa(kkk)) < 0
+            T=aa(kkk);
+            aa(kkk)=aa(kkk+1);
+            aa(kkk+1)=T;
+    end
+end
+
+% Coefficients of general solutions derived for upper, middle and lower beams
+a(1)=real(aa(1,1));
+a(2)=real(aa(3,1));
+a(3)=real(aa(5,1));
+a(4)=-a(1); a(5)=-a(2); a(6)=-a(3);
+
+b(1)=abs(imag(aa(1,1)));
+b(2)=abs(imag(aa(3,1)));
+b(3)=abs(imag(aa(5,1)));
+b(4)=abs(imag(aa(11,1)));
+b(5)=abs(imag(aa(9,1)));
+b(6)=abs(imag(aa(7,1)));
+
+% Characterized continuity conditions
+k(1,1)=0;k(1,2)=-1;k(1,3)=0;k(1,4)=-1;k(1,5)=0;k(1,6)=-1;k(1,7)=0;k(1,8)=1;k(1,9)=0;k(1,10)=1;k(1,11)=0;k(1,12)=1;
+k(2,1)=-b(1);k(2,2)=-a(1);k(2,3)=-b(2);k(2,4)=-a(2);k(2,5)=-b(3);k(2,6)=-a(3);k(2,7)=b(4);k(2,8)=a(4);k(2,9)=b(5);k(2,10)=a(5);k(2,11)=b(6);k(2,12)=a(6);
+k(3,1)=-2*a(1)*b(1);k(3,2)=-a(1)^2+b(1)^2;k(3,3)=-2*a(2)*b(2);k(3,4)=-a(2)^2+b(2)^2;
+k(3,5)=-2*a(3)*b(3);k(3,6)=-a(3)^2+b(3)^2;k(3,7)=2*a(4)*b(4);k(3,8)=a(4)^2-b(4)^2;
+k(3,9)=2*a(5)*b(5);k(3,10)=a(5)^2-b(5)^2;k(3,11)=2*a(6)*b(6);k(3,12)=a(6)^2-b(6)^2;
+k(4,1)=-3*a(1)^2*b(1)+b(1)^3;k(4,2)=-a(1)^3+3*a(1)*b(1)^2;
+k(4,3)=-3*a(2)^2*b(2)+b(2)^3;k(4,4)=-a(2)^3+3*a(2)*b(2)^2;
+k(4,5)=-3*a(3)^2*b(3)+b(3)^3;k(4,6)=-a(3)^3+3*a(3)*b(3)^2;
+k(4,7)=3*a(4)^2*b(4)-b(4)^3;k(4,8)=a(4)^3-3*a(4)*b(4)^2;
+k(4,9)=3*a(5)^2*b(5)-b(5)^3;k(4,10)=a(5)^3-3*a(5)*b(5)^2;
+k(4,11)=3*a(6)^2*b(6)-b(6)^3;k(4,12)=a(6)^3-3*a(6)*b(6)^2;
+
+% Qi = ti * Pi
+t1=(E1.*I1.*aa(1).^4+m1.*v(i)^2.*aa(1).^2-c1.*v(i).*aa(1)+k1)./(k1-c1.*v(i).*aa(1));
+t2=(E1.*I1.*aa(11).^4+m1.*v(i)^2.*aa(11).^2-c1.*v(i).*aa(11)+k1)./(k1-c1.*v(i).*aa(11));
+t3=(E1.*I1.*aa(9).^4+m1.*v(i)^2.*aa(9).^2-c1.*v(i).*aa(9)+k1)./(k1-c1.*v(i).*aa(9));
+t4=(E1.*I1.*aa(3).^4+m1.*v(i)^2.*aa(3).^2-c1.*v(i).*aa(3)+k1)./(k1-c1.*v(i).*aa(3));
+t5=(E1.*I1.*aa(5).^4+m1.*v(i)^2.*aa(5).^2-c1.*v(i).*aa(5)+k1)./(k1-c1.*v(i).*aa(5));
+t6=(E1.*I1.*aa(7).^4+m1.*v(i)^2.*aa(7).^2-c1.*v(i).*aa(7)+k1)./(k1-c1.*v(i).*aa(7));
+
+k(5,1)=t1.*k(1,1);k(5,2)=t2.*k(1,2);k(5,3)=t3.*k(1,3);k(5,4)=t4.*k(1,4);k(5,5)=t5.*k(1,5);k(5,6)=t6.*k(1,6);
+k(5,7)=t1.*k(1,7);k(5,8)=t2.*k(1,8);k(5,9)=t3.*k(1,9);k(5,10)=t4.*k(1,10);k(5,11)=t5.*k(1,11);k(5,12)=t6.*k(1,12);
+
+k(6,1)=t1.*k(2,1);k(6,2)=t2.*k(2,2);k(6,3)=t3.*k(2,3);k(6,4)=t4.*k(2,4);k(6,5)=t5.*k(2,5);k(6,6)=t6.*k(2,6);
+k(6,7)=t1.*k(2,7);k(6,8)=t2.*k(2,8);k(6,9)=t3.*k(2,9);k(6,10)=t4.*k(2,10);k(6,11)=t5.*k(2,11);k(6,12)=t6.*k(2,12);
+
+k(7,1)=t1.*k(3,1);k(7,2)=t2.*k(3,2);k(7,3)=t3.*k(3,3);k(7,4)=t4.*k(3,4);k(7,5)=t5.*k(3,5);k(7,6)=t6.*k(3,6);
+k(7,7)=t1.*k(3,7);k(7,8)=t2.*k(3,8);k(7,9)=t3.*k(3,9);k(7,10)=t4.*k(3,10);k(7,11)=t5.*k(3,11);k(7,12)=t6.*k(3,12);
+
+k(8,1)=t1.*k(4,1);k(8,2)=t2.*k(4,2);k(8,3)=t3.*k(4,3);k(8,4)=t4.*k(4,4);k(8,5)=t5.*k(4,5);k(8,6)=t6.*k(4,6);
+k(8,7)=t1.*k(4,7);k(8,8)=t2.*k(4,8);k(8,9)=t3.*k(4,9);k(8,10)=t4.*k(4,10);k(8,11)=t5.*k(4,11);k(8,12)=t6.*k(4,12);
+
+% Ri = ti * tti * Pi
+tt1=t1.*(k2-c2.*v(i).*aa(1))./(E3.*I3.*aa(1).^4+m3.*v(i)^2.*aa(1).^2-c2.*v(i).*aa(1)-c3.*v(i).*aa(1)+k2+k3);
+tt2=t2.*(k2-c2.*v(i).*aa(11))./(E3.*I3.*aa(11).^4+m3.*v(i)^2.*aa(11).^2-c2.*v(i).*aa(11)-c3.*v(i).*aa(11)+k2+k3);
+tt3=t3.*(k2-c2.*v(i).*aa(9))./(E3.*I3.*aa(9).^4+m3.*v(i)^2.*aa(9).^2-c2.*v(i).*aa(9)-c3.*v(i).*aa(9)+k2+k3);
+tt4=t4.*(k2-c2.*v(i).*aa(3))./(E3.*I3.*aa(3).^4+m3.*v(i)^2.*aa(3).^2-c2.*v(i).*aa(3)-c3.*v(i).*aa(3)+k2+k3);
+tt5=t5.*(k2-c2.*v(i).*aa(5))./(E3.*I3.*aa(5).^4+m3.*v(i)^2.*aa(5).^2-c2.*v(i).*aa(5)-c3.*v(i).*aa(5)+k2+k3);
+tt6=t6.*(k2-c2.*v(i).*aa(7))./(E3.*I3.*aa(7).^4+m3.*v(i)^2.*aa(7).^2-c2.*v(i).*aa(7)-c3.*v(i).*aa(7)+k2+k3);
+
+k(9,1)=tt1.*k(1,1);k(9,2)=tt2.*k(1,2);k(9,3)=tt3.*k(1,3);k(9,4)=tt4.*k(1,4);k(9,5)=tt5.*k(1,5);k(9,6)=tt6.*k(1,6);
+k(9,7)=tt1.*k(1,7);k(9,8)=tt2.*k(1,8);k(9,9)=tt3.*k(1,9);k(9,10)=tt4.*k(1,10);k(9,11)=tt5.*k(1,11);k(9,12)=tt6.*k(1,12);
+
+k(10,1)=tt1.*k(2,1);k(10,2)=tt2.*k(2,2);k(10,3)=tt3.*k(2,3);k(10,4)=tt4.*k(2,4);k(10,5)=tt5.*k(2,5);k(10,6)=tt6.*k(2,6);
+k(10,7)=tt1.*k(2,7);k(10,8)=tt2.*k(2,8);k(10,9)=tt3.*k(2,9);k(10,10)=tt4.*k(2,10);k(10,11)=tt5.*k(2,11);k(10,12)=tt6.*k(2,12);
+
+k(11,1)=tt1.*k(3,1);k(11,2)=tt2.*k(3,2);k(11,3)=tt3.*k(3,3);k(11,4)=tt4.*k(3,4);k(11,5)=tt5.*k(3,5);k(11,6)=tt6.*k(3,6);
+k(11,7)=tt1.*k(3,7);k(11,8)=tt2.*k(3,8);k(11,9)=tt3.*k(3,9);k(11,10)=tt4.*k(3,10);k(11,11)=tt5.*k(3,11);k(11,12)=tt6.*k(3,12);
+
+k(12,1)=tt1.*k(4,1);k(12,2)=tt2.*k(4,2);k(12,3)=tt3.*k(4,3);k(12,4)=tt4.*k(4,4);k(12,5)=tt5.*k(4,5);k(12,6)=tt6.*k(4,6);
+k(12,7)=tt1.*k(4,7);k(12,8)=tt2.*k(4,8);k(12,9)=tt3.*k(4,9);k(12,10)=tt4.*k(4,10);k(12,11)=tt5.*k(4,11);k(12,12)=tt6.*k(4,12);
+
+f=[0.0000 0.0000 0.0000 -1/E1/I1 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000];
+P=k^-1*f';
+
+% Qi = ti * Pi
+Q(1)=t1.*P(1);Q(2)=t2.*P(2);Q(3)=t3.*P(3);Q(4)=t4.*P(4);Q(5)=t5.*P(5);Q(6)=t6.*P(6);
+Q(7)=t1.*P(7);Q(8)=t2.*P(8);Q(9)=t3.*P(9);Q(10)=t4.*P(10);Q(11)=t5.*P(11);Q(12)=t6.*P(12);
+
+% Ri = ti * tti * Pi
+R(1)=tt1.*P(1);R(2)=tt2.*P(2);R(3)=tt3.*P(3);R(4)=tt4.*P(4);R(5)=tt5.*P(5);R(6)=tt6.*P(6);
+R(7)=tt1.*P(7);R(8)=tt2.*P(8);R(9)=tt3.*P(9);R(10)=tt4.*P(10);R(11)=tt5.*P(11);R(12)=tt6.*P(12);
+
+% Determinatino of beam deflectin at 15 m distance from the position of the applied concentrated moving load
+% Capturing both right and left sides
+x=-15:0.5:15;
+for j=1:61
+  % w1(x1), w2(x1), w3(x1) for x1>=0
+  if x(j)>=0
+       xx=x(j);
+       y1(j)= exp(a(4)*xx)*(P(7)*sin(b(4)*xx)+P(8)*cos(b(4)*xx))...
+           +exp(a(5)*xx)*(P(9)*sin(b(5)*xx)+P(10)*cos(b(5)*xx))...
+           +exp(a(6)*xx)*(P(11)*sin(b(6)*xx)+P(12)*cos(b(6)*xx));
+       y2(j)= exp(a(4)*xx)*(Q(7)*sin(b(4)*xx)+Q(8)*cos(b(4)*xx))...
+           +exp(a(5)*xx)*(Q(9)*sin(b(5)*xx)+Q(10)*cos(b(5)*xx))...
+           +exp(a(6)*xx)*(Q(11)*sin(b(6)*xx)+Q(12)*cos(b(6)*xx));
+       y3(j)= exp(a(4)*xx)*(R(7)*sin(b(4)*xx)+R(8)*cos(b(4)*xx))...
+           +exp(a(5)*xx)*(R(9)*sin(b(5)*xx)+R(10)*cos(b(5)*xx))...
+           +exp(a(6)*xx)*(R(11)*sin(b(6)*xx)+R(12)*cos(b(6)*xx));
+  % w1(x1), w2(x1), w3(x1) for x1<0
+  else
+       xx=x(j);
+       y1(j)= exp(a(1)*xx)*(P(1)*sin(b(1)*xx)+P(2)*cos(b(1)*xx))...
+           +exp(a(2)*xx)*(P(3)*sin(b(2)*xx)+P(4)*cos(b(2)*xx))...
+           +exp(a(3)*xx)*(P(5)*sin(b(3)*xx)+P(6)*cos(b(3)*xx));
+       y2(j)= exp(a(1)*xx)*(Q(1)*sin(b(1)*xx)+Q(2)*cos(b(1)*xx))...
+           +exp(a(2)*xx)*(Q(3)*sin(b(2)*xx)+Q(4)*cos(b(2)*xx))...
+           +exp(a(3)*xx)*(Q(5)*sin(b(3)*xx)+Q(6)*cos(b(3)*xx));
+       y3(j)= exp(a(1)*xx)*(R(1)*sin(b(1)*xx)+R(2)*cos(b(1)*xx))...
+           +exp(a(2)*xx)*(R(3)*sin(b(2)*xx)+R(4)*cos(b(2)*xx))...
+           +exp(a(3)*xx)*(R(5)*sin(b(3)*xx)+R(6)*cos(b(3)*xx));
+  end
+end
+
+% Minimum (-) and maximum (+) deflections of upper, middle and lower beams for each specific velocity
+y1=real(y1');
+y2=real(y2');
+y3=real(y3');
+y123minmax(i,1)=v(i)*3.6; % km/h
+y123minmax(i,2)=1000*min(y1); % mm
+y123minmax(i,3)=1000*max(y1); % mm
+y123minmax(i,4)=1000*min(y2); % mm
+y123minmax(i,5)=1000*max(y2); % mm
+y123minmax(i,6)=1000*min(y3); % mm
+y123minmax(i,7)=1000*max(y3); % mm
+end
+
+% Derivation of minimum negative (-) deflection of upper beam at critical velocity
+y1min(1,1)=y123minmax(1,1);
+y1min(1,2)=y123minmax(1,2);
+y1min(1,3)=y123minmax(1,3);
+y1min(1,4)=y123minmax(1,4);
+y1min(1,5)=y123minmax(1,5);
+y1min(1,6)=y123minmax(1,6);
+y1min(1,7)=y123minmax(1,7);
+
+for i=2:150
+    if y123minmax(i,2)<y1min(1,2)
+        y1min(1,1)=y123minmax(i,1);
+        y1min(1,2)=y123minmax(i,2);
+        y1min(1,3)=y123minmax(i,3);
+        y1min(1,4)=y123minmax(i,4);
+        y1min(1,5)=y123minmax(i,5);
+        y1min(1,6)=y123minmax(i,6);
+        y1min(1,7)=y123minmax(i,7);
+        if y123minmax(i+1,2)>y1min(1,2)
+            break
+        end
+    end
+end
+
+% Calculation of dynamic amplification factor:
+% Maximum vertical deflection of the rail under moving loading / Maximum vertical deflection of the rail under static loading 
+DAF=y1min(1,2)/y123minmax(151,2);
